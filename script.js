@@ -6,22 +6,41 @@ const form = document.getElementById("aluno-form");
 const nomeInput = document.getElementById("nome");
 const idadeInput = document.getElementById("idade");
 const cursoInput = document.getElementById("curso");
+const submitBtn = document.getElementById("submit-btn");
+
+// Variável para controlar se estamos editando
+let alunoEditandoId = null;
 //Funções
-//Função para criar um novo registro
+//Função para criar ou atualizar um registro
 form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    const novoAluno = {
+    const dadosAluno = {
         nome: nomeInput.value,
         idade: parseInt(idadeInput.value),
         curso: cursoInput.value,
     }
 
-    await fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(novoAluno),
-    });
+    if (alunoEditandoId) {
+        // Modo de edição - envia PUT
+        await fetch(`${API_URL}/${alunoEditandoId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(dadosAluno),
+        });
+        
+        // Resetar o modo de edição
+        alunoEditandoId = null;
+        submitBtn.textContent = "Adicionar";
+        submitBtn.classList.remove("editando");
+    } else {
+        // Modo de criação - envia POST
+        await fetch(API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(dadosAluno),
+        });
+    }
 
     nomeInput.value = "";
     idadeInput.value = "";
@@ -70,9 +89,19 @@ async function deletarAluno(id) {
 async function atualizarAluno(id) {
     const res = await fetch(`${API_URL}/${id}`); 
     const aluno = await res.json();
-    nomeInput.value = `${aluno.nome}`;
-    idadeInput.value = `${aluno.idade}`;
-    cursoInput.value = `${aluno.curso}`;
+    
+    // Preencher o formulário com os dados do aluno
+    nomeInput.value = aluno.nome;
+    idadeInput.value = aluno.idade;
+    cursoInput.value = aluno.curso;
+    
+    // Ativar modo de edição
+    alunoEditandoId = id;
+    submitBtn.textContent = "Atualizar";
+    submitBtn.classList.add("editando");
+    
+    // Rolar para o topo para ver o formulário
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 //Chamar a função para listar os alunos
